@@ -1,0 +1,144 @@
+import sys
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QListWidget, QLabel, QMessageBox
+from PyQt5.QtCore import Qt
+
+class ContactBookApp(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Contact Book")
+        self.setGeometry(100, 100, 500, 500)
+
+        # Contact storage
+        self.contacts = {}
+
+        # Layouts
+        main_layout = QVBoxLayout()
+
+        # Contact input fields
+        self.name_input = QLineEdit()
+        self.name_input.setPlaceholderText("Name")
+        self.phone_input = QLineEdit()
+        self.phone_input.setPlaceholderText("Phone Number")
+        self.email_input = QLineEdit()
+        self.email_input.setPlaceholderText("Email")
+        self.address_input = QLineEdit()
+        self.address_input.setPlaceholderText("Address")
+
+        # Buttons
+        self.add_button = QPushButton("Add Contact")
+        self.update_button = QPushButton("Update Contact")
+        self.delete_button = QPushButton("Delete Contact")
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Search by Name or Phone")
+        self.search_button = QPushButton("Search")
+
+        # Contact list
+        self.contact_list = QListWidget()
+        self.contact_list.itemClicked.connect(self.load_contact_details)
+
+        # Adding widgets to layout
+        main_layout.addWidget(QLabel("Contact Details"))
+        main_layout.addWidget(self.name_input)
+        main_layout.addWidget(self.phone_input)
+        main_layout.addWidget(self.email_input)
+        main_layout.addWidget(self.address_input)
+        main_layout.addWidget(self.add_button)
+        main_layout.addWidget(self.update_button)
+        main_layout.addWidget(self.delete_button)
+        main_layout.addWidget(QLabel("Search"))
+        main_layout.addWidget(self.search_input)
+        main_layout.addWidget(self.search_button)
+        main_layout.addWidget(QLabel("Contact List"))
+        main_layout.addWidget(self.contact_list)
+
+        # Connect button events to functions
+        self.add_button.clicked.connect(self.add_contact)
+        self.update_button.clicked.connect(self.update_contact)
+        self.delete_button.clicked.connect(self.delete_contact)
+        self.search_button.clicked.connect(self.search_contact)
+
+        # Set layout
+        self.setLayout(main_layout)
+
+    def add_contact(self):
+        name = self.name_input.text()
+        phone = self.phone_input.text()
+        email = self.email_input.text()
+        address = self.address_input.text()
+
+        if name and phone:
+            if name not in self.contacts:
+                self.contacts[name] = {
+                    "phone": phone,
+                    "email": email,
+                    "address": address
+                }
+                self.contact_list.addItem(f"{name} - {phone}")
+                self.clear_inputs()
+            else:
+                QMessageBox.warning(self, "Duplicate Contact", "A contact with this name already exists.")
+        else:
+            QMessageBox.warning(self, "Input Error", "Name and Phone are required fields.")
+
+    def load_contact_details(self, item):
+        name = item.text().split(" - ")[0]
+        contact = self.contacts.get(name)
+        if contact:
+            self.name_input.setText(name)
+            self.phone_input.setText(contact["phone"])
+            self.email_input.setText(contact["email"])
+            self.address_input.setText(contact["address"])
+
+    def update_contact(self):
+        selected_item = self.contact_list.currentItem()
+        if selected_item:
+            name = self.name_input.text()
+            phone = self.phone_input.text()
+            email = self.email_input.text()
+            address = self.address_input.text()
+
+            old_name = selected_item.text().split(" - ")[0]
+
+            if old_name in self.contacts:
+                del self.contacts[old_name]  # Remove old contact
+
+            self.contacts[name] = {
+                "phone": phone,
+                "email": email,
+                "address": address
+            }
+
+            selected_item.setText(f"{name} - {phone}")
+            self.clear_inputs()
+        else:
+            QMessageBox.warning(self, "Selection Error", "No contact selected to update.")
+
+    def delete_contact(self):
+        selected_item = self.contact_list.currentItem()
+        if selected_item:
+            name = selected_item.text().split(" - ")[0]
+            del self.contacts[name]  # Remove from dictionary
+            self.contact_list.takeItem(self.contact_list.row(selected_item))
+            self.clear_inputs()
+        else:
+            QMessageBox.warning(self, "Selection Error", "No contact selected to delete.")
+
+    def search_contact(self):
+        search_text = self.search_input.text().lower()
+        self.contact_list.clear()
+        
+        for name, details in self.contacts.items():
+            if search_text in name.lower() or search_text in details["phone"]:
+                self.contact_list.addItem(f"{name} - {details['phone']}")
+
+    def clear_inputs(self):
+        self.name_input.clear()
+        self.phone_input.clear()
+        self.email_input.clear()
+        self.address_input.clear()
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = ContactBookApp()
+    window.show()
+    sys.exit(app.exec_())
